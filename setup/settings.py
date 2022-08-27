@@ -46,7 +46,7 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    'uptime.apps.AppConfig'
+    'uptime.apps.UptimeConfig'
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
