@@ -6,6 +6,9 @@ app_name = 'uptime'
 driver_urlpatterns = [
     path('drivers/', views.DriverList.as_view()),
     path('drivers/<int:pk>', views.DriverDetail.as_view()),
+    path('drivers/<int:pk>/missions/', views.MissionsList.as_view()),
+    path('drivers/free/', views.FreeDrivers.as_view()),
+    path('drivers/<int:pk>/delivered/', views.Delivered.as_view()),
 ]
 
 order_urlpatterns = [

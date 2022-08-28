@@ -16,6 +16,7 @@ class Driver(models.Model):
     user = models.OneToOneField(to=User, on_delete=models.CASCADE)
     location = models.CharField(max_length=100, null=True)
     status = models.IntegerField(default=StatusChoices.FREE, choices=StatusChoices.choices)
+    currentMission = models.ForeignKey("Order", on_delete=models.SET_NULL, null=True)
 
     def __str__(self) -> str:
         return (f"<user: {self.user.username}> "
@@ -28,9 +29,9 @@ class Order(models.Model):
     """"Order model"""
     
     class StatusChoices(models.IntegerChoices):
-        WAITING = 0, "Waiting"
-        ASSIGNED = 1, "Assigned"
-        DELIVERED = 2, "Delivered"
+        WAITING = 0, "Waiting"  # waits to be assigned to a driver
+        ASSIGNED = 1, "Assigned"  # assigned to a driver
+        DELIVERED = 2, "Delivered"  # delivered to destination
 
     # _id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     src = models.CharField(max_length=100, null=False, blank=False)
@@ -38,14 +39,10 @@ class Order(models.Model):
     status = models.IntegerField(default=StatusChoices.WAITING, choices=StatusChoices.choices)
     isActive = models.BooleanField(default=False)
     createdAt = models.DateTimeField(auto_now_add=True, null=False)
-    assigned = models.ForeignKey(to=Driver, on_delete=models.CASCADE, null=True)
+    driver = models.ForeignKey(to=Driver, on_delete=models.CASCADE, null=True)
     assignedAt = models.DateTimeField(auto_now_add=False, null=True)
-    delivered = models.DateTimeField(auto_now_add=False, null=True)
+    deliveredAt = models.DateTimeField(auto_now_add=False, null=True)
 
     def __str__(self):
         return (f"<from: {self.src}, to: {self.dest}> | status: { Order.StatusChoices(self.status).label }")
 
-
-class Assignment(models.Model):
-    driver = models.ForeignKey(to=Driver, on_delete=models.CASCADE, unique=True, null=False)
-    order = models.ForeignKey(to=Order, on_delete=models.CASCADE, null=False)

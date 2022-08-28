@@ -54,14 +54,6 @@ class DriverDetail(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def patch(self, request, pk):
-        driver = self.get_object(pk=pk)
-        serializer = self.serializer_class(driver, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
   
     def delete(self, request, pk):
         driver = self.get_object(pk)
@@ -115,28 +107,61 @@ class OrderDetail(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def patch(self, request, pk):
-        order = self.get_object(pk=pk)
-        serializer = self.serializer_class(order, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # def patch(self, request, pk):
+    #     order = self.get_object(pk=pk)
+    #     serializer = self.serializer_class(order, data=request.data, partial=True)
+    #     if serializer.is_valid():
+    #         serializer.save()
+    #         return Response(serializer.data)
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
   
     def delete(self, request, pk):
         order = self.get_object(pk)
         order.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-# class FreeDrivers(APIView):
-#     queryset = models.Driver.objects.filter(Q(status__eq=0))
-#     serializer_class = serializers.DriverSerializer
+class FreeDrivers(APIView):
+    """"This will result in a :QuerySet:Drivers who are free at the moment"""
+    
+    queryset = Driver.objects.filter(Q(status__eq=Driver.StatusChoices.FREE.value))
+    serializer_class = DriverSerializer
 
-#     permission_classes = (permissions.IsAdminUser, )
-#     http_method_names = ['get']
+    permission_classes = (permissions.IsAuthenticated, )
+    http_method_names = ['get']
 
-#     def get(self, request):
-#         results = self.queryset.all()
-#         serializer = self.serializer_class(results, many=True)
-#         return Response(serializer.data)
+    def get(self, request):
+        results = self.queryset.all()
+        serializer = self.serializer_class(results, many=True)
+        return Response(serializer.data)
 
+
+class MissionsList(APIView):
+    """"Lists all missions of a driver in present and past"""
+    
+    query_set = Order.objects.none()
+    serializer_class = OrderSerializer
+
+    permission_classes = (permissions.IsAuthenticated, )
+    http_method_names = ['get']
+
+    def get(self, request, pk):
+        results = Order.objects.filter(Q(driver__user__id__eq=pk)).all()
+        serializer = self.serializer_class(results, many=True)
+        return Response(serializer.data)
+
+class Delivered(APIView):
+    """After delivery, this endpoint is called to do some queries"""
+    
+    queryset = Driver.objects.none()
+    serializer_class = Driver
+
+    permission_classes = (permissions.IsAuthenticated, )
+    http_method_names = ['post']
+
+    def post(self, request, pk):
+        driver = Driver.objects.get(pk=pk)
+        from datetime import datetime as dt
+        driver.currentMission.update(deliveredAt=dt.now(), isActive=False, status=Order.StatusChoices.DELIVERED)
+        driver.update(status=Driver.StatusChoices.FREE, currentMission=None)
+        serializer = self.serializer_class(driver, data=request.data)
+        return Response(serializer.data)
